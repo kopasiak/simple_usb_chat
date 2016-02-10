@@ -272,8 +272,11 @@ void fill_ffs_request(struct ffs_request *req, int dir, int ep, int event_fd,
 	 * int io_prep_pwrite()
 	 * int io_prep_pread()
 	 */
+	if (dir == USB_DIR_IN)
+		io_prep_pwrite(iocb, ep, buf, length, 0);
+	else
+		io_prep_pread(iocb, ep, buf, length, 0);
 
-#warning TODO not implemented
 
 	io_set_eventfd(iocb, event_fd);
 
@@ -366,8 +369,18 @@ int prepare_ffs(char *ffs_path, int *ep)
 	 * ssize_t write(int fd, const void *buf, size_t count)
 	 * sizeof()
 	 */
+	if (write(ep[0], &descriptors, sizeof(descriptors)) < 0) {
+		report_error("unable do write descriptors");
+		ret = -errno;
+		goto out;
+	}
 
-#warning TODO not implemented
+	if (write(ep[0], &strings, sizeof(strings)) < 0) {
+		report_error("unable to write strings");
+		ret = -errno;
+		goto out;
+	}
+
 
 	/* Open other ep files */
 	for (i = 1; i < 3; ++i) {
@@ -545,8 +558,15 @@ void in_complete(struct ffs_request *req)
 		 *
 		 * int submit_ffs_request()
 		 */
-#warning TODO not implemented
+		in_transfer->buf_request->length = len;
 
+		ret = submit_ffs_request(in_transfer->ctx,
+					 in_transfer->buf_request);
+		if (ret < 0) {
+			report_error("Failed to submit transfer");
+			/* Just die to keep things simple */
+			exit(-1);
+		}
 	} else {
 		/*
 		 * We have the whole message so let's print it
@@ -614,9 +634,14 @@ void out_complete(struct ffs_request *req)
 		 *
 		 * int submit_ffs_request()
 		 */
-
-#warning TODO not implemented
-
+		out_transfer->buf_request->length = len;
+		ret = submit_ffs_request(out_transfer->ctx,
+					 out_transfer->buf_request);
+		if (ret < 0) {
+			report_error("Failed submit transfer");
+			/* Just die to keep things simple */
+			exit(-1);
+		}
 	} else {
 		/*
 		 * We have the whole message so let's print
@@ -665,8 +690,17 @@ int prepare_transfers(int *ep, io_context_t *ctx, int event_fd,
 	 *
 	 * void fill_ffs_request()
 	 */
+	fill_ffs_request(it->length_request, USB_DIR_OUT, ep[EP_OUT_IDX],
+			 event_fd, (unsigned char *)&it->message.length, 2,
+			 in_complete, it);
 
-#warning TODO not implemented
+	fill_ffs_request(it->buf_request, USB_DIR_OUT, ep[EP_OUT_IDX],
+			 /*
+			  * Actual length will be filled after
+			  * receiving it from host
+			  */
+			 event_fd, (unsigned char *)&it->message.line_buf, 0,
+			 in_complete, it);
 
 	/*
 	 * TODO: Fill the USB IN requests (for chat OUT transfer)
@@ -684,8 +718,18 @@ int prepare_transfers(int *ep, io_context_t *ctx, int event_fd,
 	 *
 	 * void fill_ffs_request()
 	 */
+	fill_ffs_request(ot->length_request, USB_DIR_IN, ep[EP_IN_IDX],
+			 event_fd, (unsigned char *)&ot->message.length, 2,
+			 out_complete, ot);
 
-#warning TODO not implemented
+	fill_ffs_request(ot->buf_request, USB_DIR_IN, ep[EP_IN_IDX],
+			 /*
+			  * Actual length will be filled after
+			  * reading user input
+			  */
+			 event_fd, (unsigned char *)&ot->message.line_buf, 0,
+			 out_complete, ot);
+
 
 	it->ctx = ctx;
 	ot->ctx = ctx;
@@ -733,8 +777,11 @@ int handle_ep0(int *ep, struct transfer *in_transfer, int *connected)
 		 *
 		 * int recv_message()
 		 */
-#warning TODO not implemented
-
+		ret = recv_message(in_transfer);
+		if (ret < 0) {
+			report_error("Unable to receive message");
+			return ret;
+		}
 		break;
 
 	case FUNCTIONFS_DISABLE:
@@ -823,8 +870,11 @@ void do_chat(int *ep, io_context_t *ctx, int event_fd)
 		 * FD_ISSET()
 		 * int handle_events()
 		 */
-
-#warning TODO not implemented
+		if (FD_ISSET(event_fd, &rfds)) {
+			ret = handle_events(ctx, event_fd);
+			if (ret)
+				goto cleanup;
+		}
 
 		if (!connected)
 			continue;
