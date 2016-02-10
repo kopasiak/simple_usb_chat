@@ -240,8 +240,14 @@ void in_complete(struct libusb_transfer *t)
 		 *
 		 * int libusb_submit_transfer()
 		 */
+		in_transfer->buf_transfer->length = len;
 
-#warning TODO not implemented
+		ret = libusb_submit_transfer(in_transfer->buf_transfer);
+		if (ret < 0) {
+			report_error("Failed to submit transfer");
+			/* Just die to keep things simple */
+			exit(-1);
+		}
 
 	} else {
 		/*
@@ -311,8 +317,14 @@ void out_complete(struct libusb_transfer *t)
 		 *
 		 * int libusb_submit_transfer()
 		 */
+		out_transfer->buf_transfer->length = len;
 
-#warning TODO not implemented
+		ret = libusb_submit_transfer(out_transfer->buf_transfer);
+		if (ret < 0) {
+			report_error("Failed to submit transfer");
+			/* Just die to keep things simple */
+			exit(-1);
+               }
 
 	} else {
 		/*
@@ -360,7 +372,17 @@ int prepare_transfers(libusb_device_handle *dh, unsigned char in_ep,
 	 * void libusb_fill_bulk_transfer()
 	 */
 
-#warning TODO not implemented
+	libusb_fill_bulk_transfer(it->length_transfer, dh, in_ep,
+				  (unsigned char *)&it->message.length,
+				  2, in_complete, it, 0);
+
+	libusb_fill_bulk_transfer(it->buf_transfer, dh, in_ep,
+				  /*
+				   * Actual length will be filled after
+				   * receiving it from device
+				   */
+				  (unsigned char *)&it->message.line_buf,
+				  -1, in_complete, it, 0);
 
 	/*
 	 * TODO: Fill the USB OUT transfers
@@ -378,8 +400,17 @@ int prepare_transfers(libusb_device_handle *dh, unsigned char in_ep,
 	 * void libusb_fill_bulk_transfer()
 	 */
 
-#warning TODO not implemented
+	libusb_fill_bulk_transfer(ot->length_transfer, dh, out_ep,
+				  (unsigned char *)&ot->message.length,
+				  2, out_complete, ot, 0);
 
+	libusb_fill_bulk_transfer(ot->buf_transfer, dh, out_ep,
+				  /*
+				   * Actual length will be filled after
+				   * receiving input from user
+				   */
+				  (unsigned char *)&ot->message.line_buf,
+				  -1, out_complete, ot, 0);
 	*in_transfer = it;
 	*out_transfer = ot;
 	return 0;
@@ -483,9 +514,13 @@ void do_chat(libusb_context *ctx, libusb_device_handle *dh,
 			 *
 			 * int libusb_handle_events_timeout_completed();
 			 */
-
-#warning TODO not implemented
-
+			libusb_handle_events_timeout_completed(ctx, &tv, NULL);
+			if (ret < 0 && ret != LIBUSB_ERROR_BUSY &&
+			    ret != LIBUSB_ERROR_TIMEOUT &&
+			    ret != LIBUSB_ERROR_OVERFLOW &&
+			    ret != LIBUSB_ERROR_INTERRUPTED ) {
+				goto cleanup;
+			}
 			break;
 		}
 
