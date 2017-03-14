@@ -37,9 +37,11 @@ libusb_device_handle *device_match(libusb_device *dev)
 	 *
 	 * int libusb_get_device_descriptor()
 	 */
-#warning TODO not implemented
-
+	ret = libusb_get_device_descriptor(dev, &desc);
 	if (ret < 0)
+		return NULL;
+
+	if (desc.idVendor != DESIRED_VID || desc.idProduct != DESIRED_PID)
 		return NULL;
 
 	/*
@@ -62,19 +64,22 @@ libusb_device_handle *device_match(libusb_device *dev)
 	 * int libusb_get_string_descriptor_ascii()
 	 * int strcmp()
 	 */
-
+	ret = libusb_get_string_descriptor_ascii(dh, desc.iManufacturer, (unsigned char *)str_buf, sizeof(str_buf));
 	if (ret < 0) {
 		/*
 		 * TODO: Remember that you have opened a device
 		 *
 		 * void libusb_close()
 		 */
-		goto out;
+		goto close_handle;
 	}
-#warning TODO not implemented 
+
+	if (strcmp(str_buf, DESIRED_MANUFACTURER) != 0)
+		goto close_handle;
 
 	return dh;
-out:
+close_handle:
+	libusb_close(dh);
 	return NULL;
 }
 
@@ -126,8 +131,7 @@ int main(int argc, char **argv)
 	 *
 	 * ssize_t libusb_get_device_list()
 	 */
-#warning TODO not implemented
-
+	ndevices = libusb_get_device_list(ctx, &devices);
 	if (ndevices < 0) {
 		report_error("Unable to get device list");
 		ret = -EINVAL;
