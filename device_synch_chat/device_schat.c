@@ -172,17 +172,17 @@ int prepare_ffs(char *ffs_path, int *ep)
 		goto out;
 	}
 
-	/* Provide descriptors and strings */
-	if (write(ep[0], &descriptors, sizeof(descriptors)) < 0) {
-		report_error("unable do write descriptors");
-		ret = -errno;
-		goto out;
-	}
-	if (write(ep[0], &strings, sizeof(strings)) < 0) {
-		report_error("unable to write strings");
-		ret = -errno;
-		goto out;
-	}
+	/*
+	 * TODO: Provide descriptors and strings
+	 *
+	 * Hints:
+	 * - Descriptors and strings are defined on the top of this file
+	 * - You should simply two time call write() function using ep[0] fd
+	 *
+	 * ssize_t write(int fd, const void *buf, size_t count)
+	 * sizeof()
+	 */
+#warning TODO not implemented
 
 	/* Open other ep files */
 	for (i = 1; i < 3; ++i) {
@@ -217,7 +217,16 @@ int send_message(int ep, struct message *message)
 	int ret;
 
 	len = strlen(message->line_buf) + 1;
-	message->length = htole16(len + 2);
+
+	/*
+	 * TODO: Set the correct message length
+	 *
+	 * Hints:
+	 * - remember about header
+	 *
+	 * uint16_t htole16()
+	 */
+#warning TODO not implemented
 
 	ret = write(ep, &message->length, sizeof(message->length));
 	if (ret < 0) {
@@ -225,9 +234,14 @@ int send_message(int ep, struct message *message)
 		goto out;
 	}
 
-	ret = write(ep, message->line_buf, len);
-	if (ret < 0)
-		report_error("Unable to send content");
+	/*
+	 * TODO: Send rest of message
+	 *
+	 * ssize_t write()
+	 */
+#warning TODO not implemented
+
+
 out:
 	return ret;
 }
@@ -238,11 +252,12 @@ int recv_message(int ep, struct message *message)
 	int ret;
 	int len;
 
-	ret = read(ep, &message->length, sizeof(message->length));
-	if (ret < sizeof(message->length)) {
-		report_error("Unable to receive length");
-		goto out;
-	}
+	/*
+	 * TODO: Receive message length
+	 *
+	 * ssize_t read()
+	 */
+#warning TODO not implemented
 
 	len = le16toh(message->length) - 2;
 
@@ -327,9 +342,14 @@ void do_chat(int *ep)
 				return;
 			}
 
-			len = strlen(buf);
-			if (buf[len - 1] == '\n')
-				buf[len - 1] = '\0';
+			/*
+			 * TODO: Take care of \n
+			 *
+			 * Hint:
+			 * - protocol assumes that there is no \n
+			 *   at the end of input
+			 */
+#warning TODO not implemented
 
 			if (!strcmp(EXIT_COMMAND, M.line_buf))
 				break;
