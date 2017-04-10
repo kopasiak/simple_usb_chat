@@ -111,7 +111,8 @@ int prepare_chat(libusb_device_handle *dh,
 		 *
 		 * int libusb_claim_interface()
 		 */
-		ret = libusb_claim_interface(dh, *interface);
+#warning TODO not implemented
+
 		if (ret < 0) {
 			report_error("Unable to claim interface");
 			goto out;
@@ -146,20 +147,8 @@ int send_message(libusb_device_handle *dh, struct message *message, unsigned cha
 	 *
 	 * int libusb_bulk_transfer()
 	 */
-	ret = libusb_bulk_transfer(dh, ep, (unsigned char *)&message->length,
-				   sizeof(message->length), &transferred, 0);
-	if (ret < 0) {
-		report_error("Unable to send message");
-		goto out;
-	}
+#warning TODO not implemented
 
-	ret = libusb_bulk_transfer(dh, ep, (unsigned char *)message->line_buf,
-				   len, &transferred, 0);
-	if (ret < 0) {
-		report_error("Unable to send message");
-	}
-
-out:
 	return ret;
 }
 
@@ -187,29 +176,8 @@ int recv_message(libusb_device_handle *dh, struct message *message, unsigned cha
 	 * int libusb_bulk_transfer()
 	 * uint16_t libusb_le16_to_cpu()
 	 */
-	ret = libusb_bulk_transfer(dh, ep, (unsigned char *)message,
-				   2, &transferred, 0);
-	if (ret < 0) {
-		report_error("Unable to receive message len");
-		goto out;
-	}
+#warning TODO not implemented
 
-	len = libusb_le16_to_cpu(message->length) - 2;
-
-	if (len) {
-		ret = libusb_bulk_transfer(dh, ep,
-					   (unsigned char *)message->line_buf,
-					   len,
-					   &transferred, 0);
-		if (ret < 0) {
-			report_error("Unable to receive message");
-			goto out;
-		}
-	} else {
-		message->line_buf[0] = '\0';
-	}
-
-out:
 	return ret;
 }
 
@@ -253,7 +221,7 @@ void do_chat(libusb_device_handle *dh, unsigned char ep_in, unsigned char ep_out
 		 * TODO: Call recv_message() to wait for incomming message
 		 * Hint: Use placed below error handling code
 		 */
-		ret = recv_message(dh, &M, ep_in);
+#warning TODO not implemented
 
 		if (ret < 0) {
 			report_error("Unable to receive message");
